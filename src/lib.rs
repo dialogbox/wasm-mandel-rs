@@ -34,6 +34,14 @@ impl MandelImage {
         self.pixels.as_ptr()
     }
 
+    pub fn limit(&self) -> u32 {
+        self.limit
+    }
+
+    pub fn set_limit(&mut self, limit: u32) {
+        self.limit = limit;
+    }
+
     pub fn new(width: usize, height: usize) -> Self {
         MandelImage {
             width,
@@ -45,24 +53,14 @@ impl MandelImage {
         }
     }
 
-    // fn get_index(&self, x: usize, y: usize) -> usize {
-    //     (y * self.width + x) as usize
-    // }
-
-    fn index_to_point(&self, i: usize) -> (f64, f64) {
-        let y = i / self.width;
-        let x = i % self.width;
-
-        self.pixel_to_point((x, y))
-    }
-
-    pub fn draw_mandel(&mut self, limit: u32) {
+    pub fn draw_mandel(&mut self) {
         let _timer = Timer::new("MandelImage::draw_mandel");
 
-        self.limit = limit;
-        for i in 0..self.pixels.len() {
-            let result = self.is_in_mandel(self.index_to_point(i));
-            Self::get_color(result, self.limit, &mut self.pixels[i]);
+        for y in 0..self.height {
+            for x in 0..self.width {
+                let result = self.is_in_mandel(self.pixel_to_point(x, y));
+                self.set_color(result, x, y); //self.get_index(x, y));
+            }
         }
     }
 
@@ -73,14 +71,14 @@ impl MandelImage {
     /// `pixel` is a (column, row) pair indicating a particular pixel in that image.
     /// The `upper_left` and `lower_right` parameters are points on the complex
     /// plane designating the area our image covers.
-    fn pixel_to_point(&self, pixel: (usize, usize)) -> (f64, f64) {
+    fn pixel_to_point(&self, x: usize, y: usize) -> (f64, f64) {
         let (width, height) = (
             self.lower_right.0 - self.upper_left.0,
             self.upper_left.1 - self.lower_right.1,
         );
         (
-            self.upper_left.0 + pixel.0 as f64 * width / self.width as f64,
-            self.upper_left.1 - pixel.1 as f64 * height / self.height as f64,
+            self.upper_left.0 + x as f64 * width / self.width as f64,
+            self.upper_left.1 - y as f64 * height / self.height as f64,
             // Why subtraction here? pixel.1 increases as we go down,
             // but the imaginary component increases as we go up.
         )
@@ -97,6 +95,7 @@ impl MandelImage {
     fn is_in_mandel(&self, c: (f64, f64)) -> Option<u32> {
         let mut z = (0.0, 0.0);
         for i in 0..self.limit {
+            // z^2 + c
             z = (
                 (z.0 * z.0) - (z.1 * z.1) + c.0,
                 (z.0 * z.1) + (z.1 * z.0) + c.1,
@@ -110,36 +109,15 @@ impl MandelImage {
         None
     }
 
-    fn get_color(num: Option<u32>, limit: u32, buf: &mut [u8; 4]) {
-        buf[3] = 255;
-        match num {
-            None => {
-                buf[0] = 0;
-                buf[1] = 0;
-                buf[2] = 0
-            }
-            Some(i) => {
-                let i = (i as f64 / (limit as f64 / 255.0)) as u8;
-                buf[0] = i;
-                buf[1] = i;
-                buf[2] = i;
-            }
-        }
-    }
-}
+    fn set_color(&mut self, num: Option<u32>, x: usize, y: usize) {
+        let index = (y * self.width + x) as usize;
+        let buf = &mut self.pixels[index];
+        let color = match num {
+            None => 0,
+            Some(i) => (i as f64 / (self.limit as f64 / 255.0)) as u8,
+        };
 
-impl Default for MandelImage {
-    fn default() -> Self {
-        let width = 1024;
-        let height = 1024;
-        MandelImage {
-            width,
-            height,
-            upper_left: (-2.0, 2.0),
-            lower_right: (2.0, -2.0),
-            limit: 255,
-            pixels: vec![[0, 0, 0, 255]; width * height],
-        }
+        buf[0..3].iter_mut().for_each(|c| *c = color);
     }
 }
 

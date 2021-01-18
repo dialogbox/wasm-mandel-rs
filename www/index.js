@@ -21,7 +21,8 @@ function step() {
     setTimeout(function () {
         fps.render();
 
-        mandel_image.draw_mandel(limit);
+        mandel_image.set_limit(limit);
+        mandel_image.draw_mandel();
         ctx.putImageData(img, 0, 0)
         if (limit <= MAX_LIMIT) {
             limit = limit + 1;
