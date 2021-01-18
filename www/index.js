@@ -14,9 +14,10 @@ var usub = new Uint8ClampedArray(memory.buffer, pixelsPtr, canvas.width * canvas
 var img = new ImageData(usub, canvas.width, canvas.height);
 
 // Rendering loop
-const MAX_LIMIT = 20;
+const MAX_LIMIT = 100;
 const max_fps = 10;
 var limit = 1;
+var limit_steps = 10;
 function step() {
     setTimeout(function () {
         fps.render();
@@ -24,8 +25,8 @@ function step() {
         mandel_image.set_limit(limit);
         mandel_image.draw_mandel();
         ctx.putImageData(img, 0, 0)
-        if (limit <= MAX_LIMIT) {
-            limit = limit + 1;
+        limit = Math.min(limit + limit_steps, MAX_LIMIT);
+        if (limit < MAX_LIMIT) {
             window.requestAnimationFrame(step);
         }
     }, 1000 / max_fps);
