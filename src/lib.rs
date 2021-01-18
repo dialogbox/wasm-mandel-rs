@@ -57,6 +57,8 @@ impl MandelImage {
     }
 
     pub fn draw_mandel(&mut self, limit: u32) {
+        let _timer = Timer::new("MandelImage::draw_mandel");
+
         self.limit = limit;
         for i in 0..self.pixels.len() {
             let result = self.is_in_mandel(self.index_to_point(i));
@@ -138,5 +140,25 @@ impl Default for MandelImage {
             limit: 255,
             pixels: vec![[0, 0, 0, 255]; width * height],
         }
+    }
+}
+
+extern crate web_sys;
+use web_sys::console;
+
+pub struct Timer<'a> {
+    name: &'a str,
+}
+
+impl<'a> Timer<'a> {
+    pub fn new(name: &'a str) -> Timer<'a> {
+        console::time_with_label(name);
+        Timer { name }
+    }
+}
+
+impl<'a> Drop for Timer<'a> {
+    fn drop(&mut self) {
+        console::time_end_with_label(self.name);
     }
 }
